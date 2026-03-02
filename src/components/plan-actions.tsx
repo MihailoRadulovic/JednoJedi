@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/toast'
 
 type Props = {
   planId: string
@@ -12,6 +13,7 @@ export function PlanActions({ planId, currentStatus }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [confirm, setConfirm] = useState<string | null>(null)
+  const { toast } = useToast()
 
   async function setStatus(status: string) {
     await fetch(`/api/plan/${planId}`, {
@@ -20,6 +22,8 @@ export function PlanActions({ planId, currentStatus }: Props) {
       body: JSON.stringify({ status }),
     })
     setConfirm(null)
+    const msg = status === 'completed' ? 'Plan označen kao završen' : status === 'archived' ? 'Plan arhiviran' : 'Plan aktiviran'
+    toast(msg)
     startTransition(() => router.refresh())
   }
 

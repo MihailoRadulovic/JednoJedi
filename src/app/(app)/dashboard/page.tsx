@@ -105,16 +105,35 @@ export default async function DashboardPage() {
 
       {/* Active plan */}
       {!activePlan ? (
-        <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center">
-          <div className="text-4xl mb-3">🍽️</div>
-          <h3 className="font-semibold text-gray-900 mb-2">Nemaš aktivni plan</h3>
-          <p className="text-sm text-gray-500 mb-6">Kreiraj nedeljni, dnevni ili pojedinačni obrok plan.</p>
-          <Link
-            href="/plan/new"
-            className="inline-block bg-green-600 text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-green-700 transition"
-          >
-            Kreiraj plan →
-          </Link>
+        <div className="space-y-3">
+          <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-8 text-center">
+            <div className="text-4xl mb-3">🍽️</div>
+            <h3 className="font-semibold text-gray-900 mb-1">Nemaš aktivni plan ishrane</h3>
+            <p className="text-sm text-gray-500 mb-6">Izaberi tip plana i mi ćemo automatski generisati obroke za tebe.</p>
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              {[
+                { type: 'WEEKLY', emoji: '📅', label: 'Nedeljni', desc: '7 dana obroka' },
+                { type: 'DAILY', emoji: '🌤️', label: 'Dnevni', desc: '4 obroka' },
+                { type: 'SINGLE', emoji: '🍽️', label: 'Jedan obrok', desc: 'Brzo' },
+              ].map(opt => (
+                <Link
+                  key={opt.type}
+                  href={`/plan/new`}
+                  className="bg-gray-50 hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-xl p-3 text-center transition"
+                >
+                  <div className="text-2xl mb-1">{opt.emoji}</div>
+                  <div className="text-xs font-semibold text-gray-800">{opt.label}</div>
+                  <div className="text-xs text-gray-400">{opt.desc}</div>
+                </Link>
+              ))}
+            </div>
+            <Link
+              href="/plan/new"
+              className="inline-block bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-green-700 transition"
+            >
+              Kreiraj plan →
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -129,18 +148,36 @@ export default async function DashboardPage() {
               </h2>
               <p className="text-xs text-gray-500 mt-0.5">{GOAL_LABEL[activePlan.goal]}</p>
             </div>
-            <div className="flex items-center gap-3">
-              {totalCalsTodayPlan > 0 && (
-                <span className="text-xs text-gray-500">{totalCalsTodayPlan} kcal</span>
-              )}
-              <Link
-                href={`/plan/${activePlan.id}`}
-                className="text-xs text-green-600 hover:text-green-700 font-medium"
-              >
-                Vidi plan →
-              </Link>
-            </div>
+            <Link
+              href={`/plan/${activePlan.id}`}
+              className="text-xs text-green-600 hover:text-green-700 font-medium"
+            >
+              Vidi ceo plan →
+            </Link>
           </div>
+
+          {/* Kalorijski progress */}
+          {activePlan.targetCals && totalCalsTodayPlan > 0 && (
+            <div className="mb-4 p-3 bg-gray-50 rounded-xl">
+              <div className="flex justify-between text-xs mb-1.5">
+                <span className="text-gray-500">Kalorije danas</span>
+                <span className="font-semibold text-gray-900">
+                  {totalCalsTodayPlan} / {Math.round(activePlan.targetCals)} kcal
+                </span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    totalCalsTodayPlan > activePlan.targetCals ? 'bg-orange-400' : 'bg-green-500'
+                  }`}
+                  style={{ width: `${Math.min(100, (totalCalsTodayPlan / activePlan.targetCals) * 100)}%` }}
+                />
+              </div>
+              {totalCalsTodayPlan > activePlan.targetCals && (
+                <p className="text-xs text-orange-500 mt-1">+{totalCalsTodayPlan - Math.round(activePlan.targetCals)} kcal iznad cilja</p>
+              )}
+            </div>
+          )}
 
           <div className="divide-y divide-gray-100">
             {todayMeals.map(meal => (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 const PLAN_TYPES = [
@@ -10,9 +10,9 @@ const PLAN_TYPES = [
 ]
 
 const GOALS = [
-  { value: 'DEFICIT', label: 'Mršavljenje', desc: 'Niži kalorijski unos', emoji: '🔥' },
-  { value: 'MAINTAIN', label: 'Održavanje', desc: 'Uravnotežena ishrana', emoji: '⚖️' },
-  { value: 'SURPLUS', label: 'Masa', desc: 'Viši kalorijski unos', emoji: '💪' },
+  { value: 'DEFICIT', label: 'Mršavljenje', desc: 'Niži kalorijski unos za -400 kcal', emoji: '🔥', offset: -400 },
+  { value: 'MAINTAIN', label: 'Održavanje', desc: 'Uravnotežena ishrana', emoji: '⚖️', offset: 0 },
+  { value: 'SURPLUS', label: 'Masa', desc: 'Viši kalorijski unos za +400 kcal', emoji: '💪', offset: 400 },
 ]
 
 const MEAL_TYPES = [
@@ -22,10 +22,19 @@ const MEAL_TYPES = [
   { value: 'vecera', label: 'Večera' },
 ]
 
+function calcTDEE(height: number, weight: number, birthYear: number, goalOffset: number): number {
+  const age = new Date().getFullYear() - birthYear
+  // Mifflin-St Jeor (unisex srednja vrednost)
+  const bmr = 10 * weight + 6.25 * height - 5 * age - 78
+  const tdee = Math.round(bmr * 1.55) // umerena aktivnost
+  return Math.max(1200, tdee + goalOffset)
+}
+
 export default function NewPlanPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [suggestedCals, setSuggestedCals] = useState<number | null>(null)
   const [form, setForm] = useState({
     type: 'WEEKLY',
     goal: 'MAINTAIN',
@@ -34,6 +43,22 @@ export default function NewPlanPage() {
     targetCals: '',
     mealType: 'rucak',
   })
+
+  // Učitaj profil i izračunaj TDEE kad se dostigne korak 3
+  useEffect(() => {
+    if (step !== 3) return
+    fetch('/api/user/profile')
+      .then(r => r.json())
+      .then(user => {
+        if (user.height && user.weight && user.birthYear) {
+          const goalOffset = GOALS.find(g => g.value === form.goal)?.offset ?? 0
+          const tdee = calcTDEE(user.height, user.weight, user.birthYear, goalOffset)
+          setSuggestedCals(tdee)
+          setForm(prev => prev.targetCals ? prev : { ...prev, targetCals: String(tdee) })
+        }
+      })
+      .catch(() => {})
+  }, [step, form.goal])
 
   function set(key: string, value: string) {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -162,7 +187,10 @@ export default function NewPlanPage() {
               <button onClick={() => setStep(1)} className="flex-1 border border-gray-200 text-gray-700 px-4 py-3 rounded-xl font-medium hover:bg-gray-50 transition">
                 ← Nazad
               </button>
-              <button onClick={() => setStep(3)} className="flex-1 bg-green-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-green-700 transition">
+              <button
+                onClick={() => { setSuggestedCals(null); setForm(p => ({ ...p, targetCals: '' })); setStep(3) }}
+                className="flex-1 bg-green-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-green-700 transition"
+              >
                 Dalje →
               </button>
             </div>
@@ -206,9 +234,20 @@ export default function NewPlanPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ciljani kalorijski unos (kcal/dan) <span className="text-gray-400 font-normal">– opciono</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Ciljani kalorijski unos (kcal/dan)
+                  </label>
+                  {suggestedCals && (
+                    <button
+                      type="button"
+                      onClick={() => set('targetCals', String(suggestedCals))}
+                      className="text-xs text-green-600 hover:text-green-700 font-medium"
+                    >
+                      ↩ Vrati preporuku
+                    </button>
+                  )}
+                </div>
                 <input
                   type="number"
                   value={form.targetCals}
@@ -216,6 +255,17 @@ export default function NewPlanPage() {
                   placeholder="npr. 2000"
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
+                {suggestedCals && (
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    Preporučeno na osnovu tvog profila: <span className="text-green-600 font-semibold">{suggestedCals.toLocaleString('sr')} kcal/dan</span>
+                    {' '}(TDEE formula, umerena aktivnost)
+                  </p>
+                )}
+                {!suggestedCals && (
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    Popuni profil (visina, težina, godina) da dobiješ automatsku preporuku.
+                  </p>
+                )}
               </div>
             </div>
 
