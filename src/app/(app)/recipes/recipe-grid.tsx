@@ -31,14 +31,23 @@ const DIFF_COLOR: Record<string, string> = {
 }
 const DIFF_LABEL: Record<string, string> = { lako: 'Lako', srednje: 'Srednje', tesko: 'Teško' }
 
+const DIFF_FILTERS = [
+  { value: 'sve', label: 'Sva' },
+  { value: 'lako', label: 'Lako' },
+  { value: 'srednje', label: 'Srednje' },
+  { value: 'tesko', label: 'Tesko' },
+]
+
 export function RecipeGrid({ recipes }: { recipes: Recipe[] }) {
   const [filter, setFilter] = useState('sve')
+  const [diffFilter, setDiffFilter] = useState('sve')
   const [search, setSearch] = useState('')
 
   const visible = recipes.filter(r => {
     const matchesMeal = filter === 'sve' || r.mealTypes.includes(filter)
+    const matchesDiff = diffFilter === 'sve' || r.difficulty === diffFilter
     const matchesSearch = !search || r.name.toLowerCase().includes(search.toLowerCase())
-    return matchesMeal && matchesSearch
+    return matchesMeal && matchesDiff && matchesSearch
   })
 
   return (
@@ -69,10 +78,25 @@ export function RecipeGrid({ recipes }: { recipes: Recipe[] }) {
         ))}
       </div>
 
+      {/* Difficulty filter */}
+      <div className="flex gap-2 flex-wrap">
+        {DIFF_FILTERS.map(f => (
+          <button
+            key={f.value}
+            onClick={() => setDiffFilter(f.value)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+              diffFilter === f.value
+                ? 'bg-gray-700 text-white'
+                : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-300'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {/* Results count */}
-      {search && (
-        <p className="text-xs text-gray-500">{visible.length} rezultata</p>
-      )}
+      <p className="text-xs text-gray-400">{visible.length} {visible.length === 1 ? 'recept' : 'recepata'}</p>
 
       {/* Grid */}
       {visible.length === 0 ? (

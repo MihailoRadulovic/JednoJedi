@@ -202,6 +202,22 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
         )}
       </div>
 
+      {/* Budget alert */}
+      {plan.budget && totalCost > plan.budget && (
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+          <span className="text-xl">⚠️</span>
+          <div>
+            <p className="text-sm font-semibold text-orange-800">Prekoracen budzet</p>
+            <p className="text-xs text-orange-600 mt-0.5">
+              Procenjena cena je <span className="font-bold">{Math.round(totalCost).toLocaleString('sr')} RSD</span>,
+              a budzet je <span className="font-bold">{Math.round(plan.budget).toLocaleString('sr')} RSD</span>{' '}
+              (razlika: +{Math.round(totalCost - plan.budget).toLocaleString('sr')} RSD).
+              Zameni skuplje obroke ili povecaj budzet.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Shopping list */}
       <ShoppingList
         items={shoppingItems}

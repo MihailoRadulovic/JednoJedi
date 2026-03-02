@@ -89,16 +89,27 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
-          <div className="text-2xl font-bold text-gray-900">{user.height} cm</div>
-          <div className="text-xs text-gray-500 mt-1">Visina</div>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
-          <div className="text-2xl font-bold text-gray-900">{new Date().getFullYear() - user.birthYear!}</div>
-          <div className="text-xs text-gray-500 mt-1">Godina</div>
-        </div>
-      </div>
+      {(() => {
+        const bmi = user.weight && user.height ? +(user.weight / ((user.height / 100) ** 2)).toFixed(1) : null
+        const bmiLabel = bmi === null ? '' : bmi < 18.5 ? 'Pothranjeno' : bmi < 25 ? 'Normalno' : bmi < 30 ? 'Prekomerno' : 'Gojaznost'
+        const bmiColor = bmi === null ? '' : bmi < 18.5 ? 'text-blue-600' : bmi < 25 ? 'text-green-600' : bmi < 30 ? 'text-orange-500' : 'text-red-500'
+        return (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+              <div className="text-2xl font-bold text-gray-900">{user.weight} kg</div>
+              <div className="text-xs text-gray-500 mt-1">Tezina</div>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+              <div className="text-2xl font-bold text-gray-900">{user.height} cm</div>
+              <div className="text-xs text-gray-500 mt-1">Visina</div>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+              <div className={`text-2xl font-bold ${bmiColor}`}>{bmi ?? '–'}</div>
+              <div className="text-xs text-gray-500 mt-1">BMI · {bmiLabel}</div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Weight chart */}
       <WeightChart logs={weightLogsForChart} currentWeight={user.weight!} />

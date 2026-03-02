@@ -13,48 +13,61 @@ type RecipeRow = {
   calories: number
 }
 
-function pickRecipe(recipes: RecipeRow[], mealType: MealType, goal: Goal, used: Set<string>): RecipeRow | null {
+function pickRecipe(
+  recipes: RecipeRow[],
+  mealType: MealType,
+  goal: Goal,
+  usedToday: Set<string>,
+  usedGlobal: Set<string>,
+  targetPerMeal?: number
+): RecipeRow | null {
   const candidates = recipes.filter(r => r.mealTypes.includes(mealType))
   if (!candidates.length) return null
 
-  // Sort by calories based on goal – prefer lower for deficit, higher for surplus
-  const sorted = [...candidates].sort((a, b) =>
-    goal === 'DEFICIT' ? a.calories - b.calories :
-    goal === 'SURPLUS' ? b.calories - a.calories :
-    0
-  )
+  const score = (r: RecipeRow): number => {
+    let s = 0
+    if (!usedGlobal.has(r.id)) s += 100
+    if (!usedToday.has(r.id)) s += 50
+    if (targetPerMeal) {
+      const diff = Math.abs(r.calories - targetPerMeal)
+      s += Math.max(0, 40 - diff / 10)
+    } else {
+      if (goal === 'DEFICIT') s += (500 - r.calories) / 10
+      if (goal === 'SURPLUS') s += (r.calories - 300) / 10
+    }
+    return s + Math.random() * 15
+  }
 
-  // Take top half (goal-appropriate), shuffle to add variety
-  const pool = sorted.slice(0, Math.max(1, Math.ceil(sorted.length / 2)))
-  const shuffled = pool.sort(() => Math.random() - 0.5)
-
-  // Prefer recipes not already used today
-  return shuffled.find(r => !used.has(r.id)) ?? shuffled[0]
+  return [...candidates].sort((a, b) => score(b) - score(a))[0]
 }
 
 function buildMeals(
   recipes: RecipeRow[],
   type: PlanType,
   goal: Goal,
-  mealType?: MealType
+  mealType?: MealType,
+  targetCals?: number
 ): { day?: number; mealType: string; recipeId: string }[] {
   const meals: { day?: number; mealType: string; recipeId: string }[] = []
+  const targetPerMeal = targetCals ? targetCals / MEAL_TYPES.length : undefined
 
   if (type === 'SINGLE') {
     const mt = mealType ?? 'rucak'
-    const recipe = pickRecipe(recipes, mt as MealType, goal, new Set())
+    const recipe = pickRecipe(recipes, mt as MealType, goal, new Set(), new Set(), targetCals)
     if (recipe) meals.push({ mealType: mt, recipeId: recipe.id })
     return meals
   }
 
   const days = type === 'WEEKLY' ? 7 : 1
+  const usedGlobal = new Set<string>()
 
   for (let day = 1; day <= days; day++) {
     const usedToday = new Set<string>()
     for (const mt of MEAL_TYPES) {
-      const recipe = pickRecipe(recipes, mt, goal, usedToday)
+      const recipe = pickRecipe(recipes, mt, goal, usedToday, usedGlobal, targetPerMeal)
       if (recipe) {
         usedToday.add(recipe.id)
+        usedGlobal.add(recipe.id)
         meals.push({ day: type === 'WEEKLY' ? day : undefined, mealType: mt, recipeId: recipe.id })
       }
     }
@@ -101,7 +114,7 @@ export async function POST(req: Request) {
     select: { id: true, mealTypes: true, calories: true },
   })
 
-  const meals = buildMeals(recipes, type, goal, mealType)
+  const meals = buildMeals(recipes, type, goal, mealType, targetCals ? Number(targetCals) : undefined)
 
   const plan = await prisma.mealPlan.create({
     data: {
