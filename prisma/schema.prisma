@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Mode {
+  PRECISE
+  RELAXED
+}
+
+enum PlanType {
+  WEEKLY
+  DAILY
+  SINGLE
+}
+
+enum Goal {
+  DEFICIT
+  SURPLUS
+  MAINTAIN
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  height        Float?
+  weight        Float?
+  birthYear     Int?
+  mode          Mode        @default(RELAXED)
+  region        String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  mealPlans   MealPlan[]
+  userPrices  UserPrice[]
+  weightLogs  WeightLog[]
+}
+
+// ─── NextAuth Models ──────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Recipe {
+  id          String   @id @default(cuid())
+  name        String
+  mealTypes   String[] // ["dorucak", "rucak", "vecera", "uzina"]
+  prepTime    Int      // minuti
+  difficulty  String   // "lako" | "srednje" | "tesko"
+  calories    Float
+  protein     Float
+  fat         Float
+  carbs       Float
+  tags        String[] // ["visoko_proteinski", "bez_glutena", "brzo"]
+  steps       String[]
+  createdAt   DateTime @default(now())
+
+  ingredients RecipeIngredient[]
+  planMeals   PlanMeal[]
+}
+
+model Ingredient {
+  id            String  @id @default(cuid())
+  name          String  @unique
+  unit          String  // "kg" | "kom" | "litar" | "g"
+  nationalPrice Float   // prosečna cena u RSD
+  category      String  // "meso" | "povrce" | "mlecni" | "zacini" | "zitarice"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  recipeIngredients RecipeIngredient[]
+  userPrices        UserPrice[]
+  regionalPrices    RegionalPrice[]
+}
+
+model RecipeIngredient {
+  id           String     @id @default(cuid())
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId     String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+  amount       Float // gramatura ili broj jedinica
+}
+
+model MealPlan {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  type       PlanType
+  goal       Goal
+  persons    Int      @default(1)
+  budget     Float?   // RSD
+  targetCals Float?
+  status     String   @default("active") // "active" | "completed" | "archived"
+  createdAt  DateTime @default(now())
+
+  meals PlanMeal[]
+}
+
+model PlanMeal {
+  id       String   @id @default(cuid())
+  plan     MealPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId   String
+  recipe   Recipe   @relation(fields: [recipeId], references: [id])
+  recipeId String
+  day      Int?     // 1-7 za nedeljni plan, null za dnevni/single
+  mealType String   // "dorucak" | "uzina" | "rucak" | "vecera"
+}
+
+model UserPrice {
+  id           String     @id @default(cuid())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+  price        Float      // RSD, korigovana cena korisnika
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([userId, ingredientId])
+}
+
+model RegionalPrice {
+  id           String     @id @default(cuid())
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+  region       String     // "Beograd" | "Novi Sad" | "Nis" itd.
+  price        Float      // weighted average u RSD
+  userCount    Int        // broj korisnika koji su prijavili cenu
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([ingredientId, region])
+}
+
+model WeightLog {
+  id       String   @id @default(cuid())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  weight   Float    // kg
+  loggedAt DateTime @default(now())
+}
