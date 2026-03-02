@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import { BackButton } from '@/components/back-button'
 
 const MEAL_LABEL: Record<string, string> = { dorucak: 'Doručak', uzina: 'Užina', rucak: 'Ručak', vecera: 'Večera' }
 const DIFFICULTY_LABEL: Record<string, string> = { lako: 'Lako', srednje: 'Srednje', tesko: 'Teško' }
@@ -38,8 +39,8 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Back */}
-      <div className="text-sm text-gray-500">
-        <button onClick={() => history.back()} className="hover:text-gray-700">← Nazad</button>
+      <div>
+        <BackButton />
       </div>
 
       {/* Header */}

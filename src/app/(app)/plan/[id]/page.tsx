@@ -3,15 +3,14 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import { PlanActions } from '@/components/plan-actions'
+import { MealSwapButton } from '@/components/meal-swap-button'
+import { ShoppingList } from '@/components/shopping-list'
 
 const GOAL_LABEL: Record<string, string> = { DEFICIT: 'Mršavljenje 🔥', MAINTAIN: 'Održavanje ⚖️', SURPLUS: 'Masa 💪' }
 const TYPE_LABEL: Record<string, string> = { WEEKLY: 'Nedeljni plan', DAILY: 'Dnevni plan', SINGLE: 'Jedan obrok' }
 const MEAL_LABEL: Record<string, string> = { dorucak: 'Doručak', uzina: 'Užina', rucak: 'Ručak', vecera: 'Večera' }
 const DAY_NAMES = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja']
-const CATEGORY_LABEL: Record<string, string> = {
-  meso: '🥩 Meso i riba', mlecni: '🥛 Mlečni i jaja', zitarice: '🌾 Žitarice',
-  povrce: '🥦 Povrće i voće', zacini: '🫙 Začini i ulja', ostalo: '🛒 Ostalo',
-}
 
 export default async function PlanDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -108,17 +107,17 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <Link href="/dashboard" className="hover:text-gray-700">← Dashboard</Link>
+            <Link href="/plans" className="hover:text-gray-700">← Planovi</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{TYPE_LABEL[plan.type]}</h1>
           <p className="text-gray-500 text-sm">{GOAL_LABEL[plan.goal]} · {plan.persons} {plan.persons === 1 ? 'osoba' : 'osobe'}</p>
         </div>
-        <Link
-          href="/plan/new"
-          className="text-sm text-green-600 hover:text-green-700 font-medium"
-        >
-          + Novi plan
-        </Link>
+        <div className="flex flex-col items-end gap-2">
+          <Link href="/plan/new" className="text-sm text-green-600 hover:text-green-700 font-medium">
+            + Novi plan
+          </Link>
+          <PlanActions planId={plan.id} currentStatus={plan.status} />
+        </div>
       </div>
 
       {/* Stats bar */}
@@ -155,8 +154,8 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
                   </div>
                   <div className="divide-y divide-gray-50">
                     {meals.map(meal => (
-                      <div key={meal.id} className="px-5 py-3 flex items-start justify-between hover:bg-gray-50 transition">
-                        <div>
+                      <div key={meal.id} className="px-5 py-3 flex items-start justify-between hover:bg-gray-50 transition group">
+                        <Link href={`/recipe/${meal.recipe.id}`} className="flex-1">
                           <span className="text-xs font-medium text-green-600">{MEAL_LABEL[meal.mealType] ?? meal.mealType}</span>
                           <div className="text-sm font-medium text-gray-900 mt-0.5">{meal.recipe.name}</div>
                           <div className="flex gap-3 mt-1 text-xs text-gray-400">
@@ -165,8 +164,11 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
                             <span>{meal.recipe.fat}g M</span>
                             <span>{meal.recipe.carbs}g U</span>
                           </div>
+                        </Link>
+                        <div className="flex items-center gap-2 ml-4">
+                          <span className="text-xs text-gray-400 whitespace-nowrap">{meal.recipe.prepTime} min</span>
+                          <MealSwapButton planId={plan.id} mealId={meal.id} />
                         </div>
-                        <span className="text-xs text-gray-400 ml-4 whitespace-nowrap">{meal.recipe.prepTime} min</span>
                       </div>
                     ))}
                   </div>
@@ -179,8 +181,8 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
         {(plan.type === 'DAILY' || plan.type === 'SINGLE') && (
           <div className="divide-y divide-gray-100">
             {plan.meals.map(meal => (
-              <div key={meal.id} className="px-5 py-4 flex items-start justify-between">
-                <div>
+              <div key={meal.id} className="px-5 py-4 flex items-start justify-between group">
+                <Link href={`/recipe/${meal.recipe.id}`} className="flex-1">
                   <span className="text-xs font-medium text-green-600">{MEAL_LABEL[meal.mealType] ?? meal.mealType}</span>
                   <div className="text-sm font-medium text-gray-900 mt-0.5">{meal.recipe.name}</div>
                   <div className="flex gap-3 mt-1 text-xs text-gray-400">
@@ -189,8 +191,11 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
                     <span>{meal.recipe.fat}g M</span>
                     <span>{meal.recipe.carbs}g U</span>
                   </div>
+                </Link>
+                <div className="flex items-center gap-2 ml-4">
+                  <span className="text-xs text-gray-400 whitespace-nowrap">{meal.recipe.prepTime} min</span>
+                  <MealSwapButton planId={plan.id} mealId={meal.id} />
                 </div>
-                <span className="text-xs text-gray-400 ml-4 whitespace-nowrap">{meal.recipe.prepTime} min</span>
               </div>
             ))}
           </div>
@@ -198,63 +203,12 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
       </div>
 
       {/* Shopping list */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="font-bold text-gray-900">Lista kupovine</h2>
-          <span className="text-sm font-semibold text-green-600">≈ {Math.round(totalCost).toLocaleString('sr')} RSD</span>
-        </div>
-
-        {plan.budget && totalCost > plan.budget && (
-          <div className="mx-5 mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
-            ⚠️ Procenjena cena ({Math.round(totalCost).toLocaleString('sr')} RSD) premašuje tvoj budžet ({plan.budget.toLocaleString('sr')} RSD)
-          </div>
-        )}
-
-        <div className="divide-y divide-gray-100">
-          {Object.entries(byCategory)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([category, items]) => (
-              <div key={category}>
-                <div className="px-5 py-2.5 bg-gray-50">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    {CATEGORY_LABEL[category] ?? category}
-                  </span>
-                </div>
-                {items.sort((a, b) => a.name.localeCompare(b.name)).map(item => {
-                  const displayAmount = item.unit === 'kg'
-                    ? item.totalAmount >= 1
-                      ? `${item.totalAmount.toFixed(item.totalAmount % 1 === 0 ? 0 : 2)} kg`
-                      : `${Math.round(item.totalAmount * 1000)} g`
-                    : item.unit === 'litar'
-                    ? item.totalAmount >= 1
-                      ? `${item.totalAmount.toFixed(item.totalAmount % 1 === 0 ? 0 : 2)} l`
-                      : `${Math.round(item.totalAmount * 100) * 10} ml`
-                    : `${item.totalAmount % 1 === 0 ? item.totalAmount : item.totalAmount.toFixed(1)} ${item.unit}`
-
-                  return (
-                    <div key={item.name} className="px-5 py-3 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded border-2 border-gray-300 flex-shrink-0" />
-                        <div>
-                          <span className="text-sm text-gray-900">{item.name}</span>
-                          <span className="text-xs text-gray-500 ml-2">{displayAmount}</span>
-                        </div>
-                      </div>
-                      <span className="text-sm text-gray-600 font-medium">
-                        ≈ {Math.round(item.estimatedCost).toLocaleString('sr')} RSD
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
-        </div>
-
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-between">
-          <span className="text-sm font-medium text-gray-700">Ukupno</span>
-          <span className="text-base font-bold text-gray-900">≈ {Math.round(totalCost).toLocaleString('sr')} RSD</span>
-        </div>
-      </div>
+      <ShoppingList
+        items={shoppingItems}
+        totalCost={totalCost}
+        planId={plan.id}
+        budget={plan.budget}
+      />
     </div>
   )
 }

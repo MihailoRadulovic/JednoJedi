@@ -25,11 +25,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Link href="/plan/new" className="text-sm text-gray-600 hover:text-gray-900 transition">
               Novi plan
             </Link>
+            <Link href="/recipes" className="text-sm text-gray-600 hover:text-gray-900 transition">
+              Recepti
+            </Link>
             <div className="flex items-center gap-3">
               {session.user?.image && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={session.user.image} alt="avatar" className="w-8 h-8 rounded-full" />
               )}
+              <Link href="/settings" className="text-sm text-gray-500 hover:text-gray-900 transition">
+                Podešavanja
+              </Link>
               <SignOutButton />
             </div>
           </div>
