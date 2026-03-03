@@ -41,12 +41,13 @@ model User {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  accounts    Account[]
-  sessions    Session[]
-  mealPlans   MealPlan[]
-  userPrices  UserPrice[]
-  weightLogs  WeightLog[]
-  favorites   FavoriteRecipe[]
+  accounts      Account[]
+  sessions      Session[]
+  mealPlans     MealPlan[]
+  userPrices    UserPrice[]
+  weightLogs    WeightLog[]
+  favorites     FavoriteRecipe[]
+  customRecipes Recipe[]
 }
 
 // ─── NextAuth Models ──────────────────────────────────────────────────────────
@@ -99,8 +100,11 @@ model Recipe {
   carbs       Float
   tags        String[] // ["visoko_proteinski", "bez_glutena", "brzo"]
   steps       String[]
+  isCustom    Boolean  @default(false)
+  createdBy   String?
   createdAt   DateTime @default(now())
 
+  creator     User?              @relation(fields: [createdBy], references: [id], onDelete: SetNull)
   ingredients RecipeIngredient[]
   planMeals   PlanMeal[]
   favorites   FavoriteRecipe[]

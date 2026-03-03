@@ -24,9 +24,8 @@ const MEAL_TYPES = [
 
 function calcTDEE(height: number, weight: number, birthYear: number, goalOffset: number): number {
   const age = new Date().getFullYear() - birthYear
-  // Mifflin-St Jeor (unisex srednja vrednost)
   const bmr = 10 * weight + 6.25 * height - 5 * age - 78
-  const tdee = Math.round(bmr * 1.55) // umerena aktivnost
+  const tdee = Math.round(bmr * 1.55)
   return Math.max(1200, tdee + goalOffset)
 }
 
@@ -44,7 +43,6 @@ export default function NewPlanPage() {
     mealType: 'rucak',
   })
 
-  // Učitaj profil i izračunaj TDEE kad se dostigne korak 3
   useEffect(() => {
     if (step !== 3) return
     fetch('/api/user/profile')
@@ -86,61 +84,70 @@ export default function NewPlanPage() {
     }
   }
 
+  const STEP_LABELS = ['Tip plana', 'Cilj', 'Detalji']
+
   return (
     <div className="max-w-lg mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Novi plan ishrane</h1>
-        <p className="text-gray-500 text-sm mt-1">Odaberi parametre i mi ćemo generisati plan za tebe.</p>
+      <div className="mb-7">
+        <h1 className="font-serif text-2xl font-bold text-gray-900">Novi plan ishrane</h1>
+        <p className="text-gray-500 text-sm mt-1 font-medium">Odaberi parametre i mi ćemo generisati plan za tebe.</p>
       </div>
 
       {/* Progress */}
-      <div className="flex gap-1.5 mb-8">
+      <div className="flex items-center gap-2 mb-8">
         {[1, 2, 3].map(n => (
-          <div
-            key={n}
-            className={`h-1.5 flex-1 rounded-full transition-colors ${n <= step ? 'bg-green-500' : 'bg-gray-100'}`}
-          />
+          <div key={n} className="flex items-center gap-2 flex-1">
+            <div className={`flex-1 h-1.5 rounded-full transition-all ${n <= step ? 'bg-green-700' : 'bg-gray-200'}`} />
+          </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      {/* Step label */}
+      <p className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4">
+        Korak {step} od 3 — {STEP_LABELS[step - 1]}
+      </p>
+
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
 
         {/* Step 1 – Tip plana */}
         {step === 1 && (
           <div>
-            <h2 className="font-bold text-gray-900 mb-1">Koji tip plana želiš?</h2>
+            <h2 className="font-serif font-bold text-gray-900 text-lg mb-1">Koji tip plana želiš?</h2>
             <p className="text-gray-500 text-sm mb-5">Odaberi vremenski okvir planiranja.</p>
             <div className="space-y-3">
               {PLAN_TYPES.map(pt => (
                 <button
                   key={pt.value}
                   onClick={() => set('type', pt.value)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition ${
-                    form.type === pt.value ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                    form.type === pt.value
+                      ? 'border-green-700 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{pt.emoji}</span>
                     <div>
-                      <div className="font-semibold text-gray-900">{pt.label}</div>
-                      <div className="text-xs text-gray-500">{pt.desc}</div>
+                      <div className="font-bold text-gray-900 text-sm">{pt.label}</div>
+                      <div className="text-xs text-gray-500 font-medium mt-0.5">{pt.desc}</div>
                     </div>
                   </div>
                 </button>
               ))}
             </div>
 
-            {/* Meal type selector for SINGLE */}
             {form.type === 'SINGLE' && (
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Koji obrok?</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Koji obrok?</label>
                 <div className="grid grid-cols-2 gap-2">
                   {MEAL_TYPES.map(mt => (
                     <button
                       key={mt.value}
                       onClick={() => set('mealType', mt.value)}
-                      className={`p-3 rounded-xl border-2 text-sm transition ${
-                        form.mealType === mt.value ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                      className={`p-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+                        form.mealType === mt.value
+                          ? 'border-green-700 bg-green-50 text-green-800'
+                          : 'border-gray-200 text-gray-700 hover:border-gray-300'
                       }`}
                     >
                       {mt.label}
@@ -152,7 +159,7 @@ export default function NewPlanPage() {
 
             <button
               onClick={() => setStep(2)}
-              className="mt-6 w-full bg-green-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-green-700 transition"
+              className="mt-6 w-full bg-green-700 text-white px-4 py-3 rounded-xl font-semibold hover:bg-green-800 transition-all shadow-sm"
             >
               Dalje →
             </button>
@@ -162,34 +169,39 @@ export default function NewPlanPage() {
         {/* Step 2 – Cilj */}
         {step === 2 && (
           <div>
-            <h2 className="font-bold text-gray-900 mb-1">Koji je tvoj cilj?</h2>
+            <h2 className="font-serif font-bold text-gray-900 text-lg mb-1">Koji je tvoj cilj?</h2>
             <p className="text-gray-500 text-sm mb-5">Recepti će biti prilagođeni kalorijskim ciljevima.</p>
             <div className="space-y-3">
               {GOALS.map(g => (
                 <button
                   key={g.value}
                   onClick={() => set('goal', g.value)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition ${
-                    form.goal === g.value ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                    form.goal === g.value
+                      ? 'border-green-700 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{g.emoji}</span>
                     <div>
-                      <div className="font-semibold text-gray-900">{g.label}</div>
-                      <div className="text-xs text-gray-500">{g.desc}</div>
+                      <div className="font-bold text-gray-900 text-sm">{g.label}</div>
+                      <div className="text-xs text-gray-500 font-medium mt-0.5">{g.desc}</div>
                     </div>
                   </div>
                 </button>
               ))}
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setStep(1)} className="flex-1 border border-gray-200 text-gray-700 px-4 py-3 rounded-xl font-medium hover:bg-gray-50 transition">
+              <button
+                onClick={() => setStep(1)}
+                className="flex-1 border border-gray-200 text-gray-700 px-4 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+              >
                 ← Nazad
               </button>
               <button
                 onClick={() => { setSuggestedCals(null); setForm(p => ({ ...p, targetCals: '' })); setStep(3) }}
-                className="flex-1 bg-green-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-green-700 transition"
+                className="flex-1 bg-green-700 text-white px-4 py-3 rounded-xl font-semibold hover:bg-green-800 transition-all shadow-sm"
               >
                 Dalje →
               </button>
@@ -200,18 +212,20 @@ export default function NewPlanPage() {
         {/* Step 3 – Detalji */}
         {step === 3 && (
           <div>
-            <h2 className="font-bold text-gray-900 mb-1">Detalji plana</h2>
+            <h2 className="font-serif font-bold text-gray-900 text-lg mb-1">Detalji plana</h2>
             <p className="text-gray-500 text-sm mb-5">Opciona podešavanja – možeš ostaviti prazno.</p>
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Broj osoba</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Broj osoba</label>
                 <div className="flex gap-2">
                   {['1', '2', '3', '4'].map(n => (
                     <button
                       key={n}
                       onClick={() => set('persons', n)}
-                      className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-medium transition ${
-                        form.persons === n ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-700'
+                      className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${
+                        form.persons === n
+                          ? 'border-green-700 bg-green-50 text-green-800'
+                          : 'border-gray-200 text-gray-700 hover:border-gray-300'
                       }`}
                     >
                       {n}
@@ -221,28 +235,29 @@ export default function NewPlanPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Budžet{form.type === 'WEEKLY' ? ' za nedelju' : ''} (RSD) <span className="text-gray-400 font-normal">– opciono</span>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Budžet{form.type === 'WEEKLY' ? ' za nedelju' : ''} (RSD){' '}
+                  <span className="text-gray-400 font-normal">– opciono</span>
                 </label>
                 <input
                   type="number"
                   value={form.budget}
                   onChange={e => set('budget', e.target.value)}
                   placeholder={form.type === 'WEEKLY' ? 'npr. 8000' : 'npr. 1200'}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent transition-all"
                 />
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-semibold text-gray-700">
                     Ciljani kalorijski unos (kcal/dan)
                   </label>
                   {suggestedCals && (
                     <button
                       type="button"
                       onClick={() => set('targetCals', String(suggestedCals))}
-                      className="text-xs text-green-600 hover:text-green-700 font-medium"
+                      className="text-xs text-green-700 hover:text-green-800 font-semibold"
                     >
                       ↩ Vrati preporuku
                     </button>
@@ -253,16 +268,17 @@ export default function NewPlanPage() {
                   value={form.targetCals}
                   onChange={e => set('targetCals', e.target.value)}
                   placeholder="npr. 2000"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent transition-all"
                 />
                 {suggestedCals && (
-                  <p className="text-xs text-gray-400 mt-1.5">
-                    Preporučeno na osnovu tvog profila: <span className="text-green-600 font-semibold">{suggestedCals.toLocaleString('sr')} kcal/dan</span>
+                  <p className="text-xs text-gray-400 mt-2 leading-relaxed">
+                    Preporučeno na osnovu tvog profila:{' '}
+                    <span className="text-green-700 font-bold">{suggestedCals.toLocaleString('sr')} kcal/dan</span>
                     {' '}(TDEE formula, umerena aktivnost)
                   </p>
                 )}
                 {!suggestedCals && (
-                  <p className="text-xs text-gray-400 mt-1.5">
+                  <p className="text-xs text-gray-400 mt-2">
                     Popuni profil (visina, težina, godina) da dobiješ automatsku preporuku.
                   </p>
                 )}
@@ -270,13 +286,16 @@ export default function NewPlanPage() {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setStep(2)} className="flex-1 border border-gray-200 text-gray-700 px-4 py-3 rounded-xl font-medium hover:bg-gray-50 transition">
+              <button
+                onClick={() => setStep(2)}
+                className="flex-1 border border-gray-200 text-gray-700 px-4 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+              >
                 ← Nazad
               </button>
               <button
                 onClick={handleCreate}
                 disabled={loading}
-                className="flex-1 bg-green-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-green-700 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                className="flex-1 bg-green-700 text-white px-4 py-3 rounded-xl font-semibold hover:bg-green-800 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
               >
                 {loading ? (
                   <>
@@ -286,9 +305,7 @@ export default function NewPlanPage() {
                     </svg>
                     Generišem...
                   </>
-                ) : (
-                  'Generiši plan ✨'
-                )}
+                ) : 'Generiši plan ✨'}
               </button>
             </div>
           </div>

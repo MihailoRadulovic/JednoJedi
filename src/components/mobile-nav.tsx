@@ -21,10 +21,8 @@ export function MobileNav({ userImage, userName }: Props) {
   const pathname = usePathname()
   const ref = useRef<HTMLDivElement>(null)
 
-  // Close on route change
   useEffect(() => { setOpen(false) }, [pathname])
 
-  // Close on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
@@ -38,7 +36,7 @@ export function MobileNav({ userImage, userName }: Props) {
       <button
         onClick={() => setOpen(prev => !prev)}
         aria-label="Meni"
-        className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition"
+        className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-all"
       >
         {open ? (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,15 +50,15 @@ export function MobileNav({ userImage, userName }: Props) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-100 shadow-lg z-50 px-4 py-3 space-y-1">
+        <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-xl z-50 px-4 py-3 space-y-0.5">
           {/* User info */}
           {(userImage || userName) && (
-            <div className="flex items-center gap-3 px-3 py-2 mb-2 border-b border-gray-100">
+            <div className="flex items-center gap-3 px-3 py-3 mb-1 border-b border-gray-100">
               {userImage && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={userImage} alt="avatar" className="w-8 h-8 rounded-full" />
+                <img src={userImage} alt="avatar" className="w-8 h-8 rounded-full ring-2 ring-gray-200" />
               )}
-              <span className="text-sm font-medium text-gray-700">{userName}</span>
+              <span className="text-sm font-semibold text-gray-800">{userName}</span>
             </div>
           )}
 
@@ -68,17 +66,17 @@ export function MobileNav({ userImage, userName }: Props) {
             <Link
               key={link.href}
               href={link.href}
-              className={`block px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+              className={`flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 pathname === link.href
                   ? 'bg-green-50 text-green-700'
-                  : 'text-gray-700 hover:bg-gray-50'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
               {link.label}
             </Link>
           ))}
 
-          <div className="pt-2 border-t border-gray-100">
+          <div className="pt-2 mt-1 border-t border-gray-100">
             <SignOutButton />
           </div>
         </div>
