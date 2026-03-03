@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { FavoriteButton } from '@/components/favorite-button'
 
 type Recipe = {
   id: string
@@ -38,16 +39,38 @@ const DIFF_FILTERS = [
   { value: 'tesko', label: 'Tesko' },
 ]
 
-export function RecipeGrid({ recipes }: { recipes: Recipe[] }) {
+const TAG_FILTERS = [
+  { value: 'brzo', label: '⚡ Brzo' },
+  { value: 'visoko_proteinski', label: '💪 Visoko proteinski' },
+  { value: 'veganski', label: '🌱 Veganski' },
+  { value: 'bez_glutena', label: '🌾 Bez glutena' },
+  { value: 'fit', label: '🎯 Fit' },
+  { value: 'srpska_kuhinja', label: '🇷🇸 Srpska kuhinja' },
+  { value: 'ekonomican', label: '💰 Ekonomičan' },
+  { value: 'porodicni', label: '👨‍👩‍👧 Porodični' },
+]
+
+export function RecipeGrid({ recipes, favoritedIds = new Set() }: { recipes: Recipe[], favoritedIds?: Set<string> }) {
   const [filter, setFilter] = useState('sve')
   const [diffFilter, setDiffFilter] = useState('sve')
+  const [activeTags, setActiveTags] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
+
+  function toggleTag(tag: string) {
+    setActiveTags(prev => {
+      const next = new Set(prev)
+      if (next.has(tag)) next.delete(tag)
+      else next.add(tag)
+      return next
+    })
+  }
 
   const visible = recipes.filter(r => {
     const matchesMeal = filter === 'sve' || r.mealTypes.includes(filter)
     const matchesDiff = diffFilter === 'sve' || r.difficulty === diffFilter
     const matchesSearch = !search || r.name.toLowerCase().includes(search.toLowerCase())
-    return matchesMeal && matchesDiff && matchesSearch
+    const matchesTags = activeTags.size === 0 || [...activeTags].every(t => r.tags.includes(t))
+    return matchesMeal && matchesDiff && matchesSearch && matchesTags
   })
 
   return (
@@ -95,6 +118,36 @@ export function RecipeGrid({ recipes }: { recipes: Recipe[] }) {
         ))}
       </div>
 
+      {/* Tag filter */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tagovi</span>
+          {activeTags.size > 0 && (
+            <button
+              onClick={() => setActiveTags(new Set())}
+              className="text-xs text-green-600 hover:text-green-700 font-medium"
+            >
+              Resetuj ({activeTags.size})
+            </button>
+          )}
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {TAG_FILTERS.map(t => (
+            <button
+              key={t.value}
+              onClick={() => toggleTag(t.value)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                activeTags.has(t.value)
+                  ? 'bg-green-100 text-green-800 border border-green-300'
+                  : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-300'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Results count */}
       <p className="text-xs text-gray-400">{visible.length} {visible.length === 1 ? 'recept' : 'recepata'}</p>
 
@@ -116,7 +169,12 @@ export function RecipeGrid({ recipes }: { recipes: Recipe[] }) {
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DIFF_COLOR[recipe.difficulty] ?? 'bg-gray-100 text-gray-600'}`}>
                   {DIFF_LABEL[recipe.difficulty] ?? recipe.difficulty}
                 </span>
-                <span className="text-xs text-gray-400">{recipe.prepTime} min</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-400">{recipe.prepTime} min</span>
+                  <span onClick={e => e.preventDefault()}>
+                    <FavoriteButton recipeId={recipe.id} initialFavorited={favoritedIds.has(recipe.id)} />
+                  </span>
+                </div>
               </div>
 
               <h3 className="font-semibold text-gray-900 text-sm mb-3 leading-snug">{recipe.name}</h3>

@@ -46,6 +46,7 @@ model User {
   mealPlans   MealPlan[]
   userPrices  UserPrice[]
   weightLogs  WeightLog[]
+  favorites   FavoriteRecipe[]
 }
 
 // ─── NextAuth Models ──────────────────────────────────────────────────────────
@@ -102,6 +103,7 @@ model Recipe {
 
   ingredients RecipeIngredient[]
   planMeals   PlanMeal[]
+  favorites   FavoriteRecipe[]
 }
 
 model Ingredient {
@@ -182,4 +184,15 @@ model WeightLog {
   userId   String
   weight   Float    // kg
   loggedAt DateTime @default(now())
+}
+
+model FavoriteRecipe {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId  String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, recipeId])
 }

@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { BackButton } from '@/components/back-button'
+import { FavoriteButton } from '@/components/favorite-button'
+import { PriceInput } from '@/components/price-input'
 
 const MEAL_LABEL: Record<string, string> = { dorucak: 'Doručak', uzina: 'Užina', rucak: 'Ručak', vecera: 'Večera' }
 const DIFFICULTY_LABEL: Record<string, string> = { lako: 'Lako', srednje: 'Srednje', tesko: 'Teško' }
@@ -30,6 +32,21 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
 
   if (!recipe) notFound()
 
+  const [favorited, userPrices] = await Promise.all([
+    prisma.favoriteRecipe.findUnique({
+      where: { userId_recipeId: { userId: session.user.id, recipeId: id } },
+    }),
+    prisma.userPrice.findMany({
+      where: {
+        userId: session.user.id,
+        ingredientId: { in: recipe.ingredients.map(ri => ri.ingredientId) },
+      },
+      select: { ingredientId: true, price: true },
+    }),
+  ])
+
+  const userPriceMap = Object.fromEntries(userPrices.map(p => [p.ingredientId, p.price]))
+
   // Estimate total cost
   const estimatedCost = recipe.ingredients.reduce(
     (sum, ri) => sum + ri.amount * ri.ingredient.nationalPrice,
@@ -55,7 +72,10 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
             {DIFFICULTY_LABEL[recipe.difficulty] ?? recipe.difficulty}
           </span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">{recipe.name}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-2xl font-bold text-gray-900">{recipe.name}</h1>
+          <FavoriteButton recipeId={id} initialFavorited={!!favorited} />
+        </div>
         <p className="text-sm text-gray-500 mt-1">{recipe.prepTime} min pripreme</p>
       </div>
 
@@ -107,6 +127,18 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
           })}
         </div>
       </div>
+
+      {/* Moje cene */}
+      <PriceInput
+        recipeId={id}
+        ingredients={recipe.ingredients.map(ri => ({
+          id: ri.ingredient.id,
+          name: ri.ingredient.name,
+          nationalPrice: ri.ingredient.nationalPrice,
+          unit: ri.ingredient.unit,
+        }))}
+        initialPrices={userPriceMap}
+      />
 
       {/* Koraci */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
